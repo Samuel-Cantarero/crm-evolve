@@ -1,16 +1,16 @@
-#import necessary libraries
+#Import necessary libraries
 import sqlite3
 import re
 from datetime import datetime
 import os
 
-# Paths for database file and schema SQL
-DB_PATH = "../database/database_crm.db"
-SCHEMA_PATH = "../database/crm_schema.sql"
+#Paths for database file and schema SQL
+DB_PATH = "database/database_crm.db"
+SCHEMA_PATH = "database/crm_schema.sql"
 
 def initialize_database():
     """
-Connects to the SQLite database and runs the schema script to ensure all tables exist.
+    Connects to the SQLite database and runs the schema script to ensure all tables exist.
     """
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -28,10 +28,8 @@ Connects to the SQLite database and runs the schema script to ensure all tables 
 # Initialize the database and get the connection/cursor
 conn, cursor = initialize_database()
 
+#Main menu
 def menu():
-    """
-    Menu for the CRM system.
-    """
     while True:
         print("\n=== CRM SYSTEM ===")
         print("1. Register new user")
@@ -61,6 +59,7 @@ def menu():
         else:
             print("Invalid option. Try again.")
 
+# 1. Register user
 def register_user():
     """
     Registers a new user in the database with basic input validation.
@@ -69,6 +68,7 @@ def register_user():
     first_name = input("Enter first name: ").strip()
     last_name = input("Enter last name: ").strip()
     email = input("Enter email: ").strip()
+    #Data validation
     if not first_name or not last_name or not email:
         print("First name, last name, and email are required.")
         return
@@ -83,41 +83,44 @@ def register_user():
         phone = input("Enter phone (optional): ").strip()
         address = input("Enter address (optional): ").strip()
         registration_date = datetime.now().strftime("%Y-%m-%d")
-        cursor.execute("SELECT COUNT(*) FROM users")
-        count = cursor.fetchone()[0] + 1
-        code = f"USR{str(count).zfill(3)}"
         # Insert the new user into the users table
         cursor.execute(
-            '''INSERT INTO users (code, first_name, last_name, email, phone, address, registration_date)
-               VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (code, first_name, last_name, email, phone if phone else None, address if address else None, registration_date)
+            '''INSERT INTO users (first_name, last_name, email, phone, address, registration_date)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (first_name, last_name, email, phone if phone else None, address if address else None, registration_date)
         )
         conn.commit()
         print("\nUser registered successfully!")
-        print(f"Assigned ID: {code}")
+        # Show the user's database-assigned ID
+        user_id = cursor.lastrowid
+        print(f"Assigned ID: {user_id}")
         print(f"Registration date: {registration_date}")
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Error registering user: {e}")
 
+#2. Search user
 def search_user():
     """
-    Allows searching for a user by email or first name.
+    Searches for a user by email or first name and displays their information.
     """
     print("\n=== SEARCH USER ===")
     print("1. Search by email")
     print("2. Search by first name")
     option = input("Choose search method: ")
-    try:
-        if option == "1":
-            email = input("Enter email: ").strip()
+    if option == "1":
+        email = input("Enter email: ").strip()
+        try:
             cursor.execute("SELECT * FROM users WHERE email=?", (email,))
             user = cursor.fetchone()
             if user:
                 show_user_info(user)
             else:
                 print("User not found.")
-        elif option == "2":
-            first_name = input("Enter first name: ").strip()
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+    elif option == "2":
+        first_name = input("Enter first name: ").strip()
+        try:
             cursor.execute("SELECT * FROM users WHERE first_name LIKE ?", (f"%{first_name}%",))
             users = cursor.fetchall()
             if users:
@@ -125,26 +128,27 @@ def search_user():
                     show_user_info(user)
             else:
                 print("User not found.")
-        else:
-            print("Invalid option.")
-    except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+    else:
+        print("Invalid option.")
 
 def show_user_info(user):
     """
-    Displays user details given a user tuple.
+    Prints detailed information about a user.
     """
     print("\n--- USER FOUND ---")
-    print(f"ID: {user[1]}")
-    print(f"Name: {user[2]} {user[3]}")
-    print(f"Email: {user[4]}")
-    print(f"Phone: {user[5] if user[5] else 'Not specified'}")
-    print(f"Address: {user[6] if user[6] else 'Not specified'}")
-    print(f"Registration date: {user[7]}")
+    print(f"ID: {user[0]}")
+    print(f"Name: {user[1]} {user[2]}")
+    print(f"Email: {user[3]}")
+    print(f"Phone: {user[4] if user[4] else 'Not specified'}")
+    print(f"Address: {user[5] if user[5] else 'Not specified'}")
+    print(f"Registration date: {user[6]}")
 
+#3. Create invoice for user
 def create_invoice():
     """
-    Creates a new invoice for an existing user.
+    Creates an invoice for a user identified by email.
     """
     print("\n=== CREATE INVOICE ===")
     email = input("Enter user's email: ").strip()
@@ -154,7 +158,7 @@ def create_invoice():
         if not user:
             print("User not found.")
             return
-        print(f"\nUser found: {user[2]} {user[3]}")
+        print(f"\nUser found: {user[1]} {user[2]}")
         description = input("Enter service/product description: ").strip()
         try:
             amount = float(input("Enter total amount: ").replace(",", "."))
@@ -174,30 +178,29 @@ def create_invoice():
         if not status:
             print("Invalid status.")
             return
-        cursor.execute("SELECT COUNT(*) FROM invoices")
-        count = cursor.fetchone()[0] + 1
-        number = f"INV{str(count).zfill(3)}"
         issue_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        # Insert the new invoice into the invoices table
+        # Insert the invoice into the invoices table
         cursor.execute(
-            '''INSERT INTO invoices (number, user_id, issue_date, description, amount, status)
-               VALUES (?, ?, ?, ?, ?, ?)''',
-            (number, user[0], issue_date, description, amount, status)
+            '''INSERT INTO invoices (user_id, issue_date, description, amount, status)
+               VALUES (?, ?, ?, ?, ?)''',
+            (user[0], issue_date, description, amount, status)
         )
         conn.commit()
         print("\nInvoice created successfully!")
-        print(f"Invoice number: {number}")
+        invoice_id = cursor.lastrowid
+        print(f"Invoice ID: {invoice_id}")
         print(f"Issue date: {issue_date}")
-        print(f"Client: {user[2]} {user[3]}")
+        print(f"Client: {user[1]} {user[2]}")
         print(f"Description: {description}")
         print(f"Amount: ${amount:.2f}")
         print(f"Status: {status}")
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Error creating invoice: {e}")
 
+# 4. Show all users
 def show_users():
     """
-    Lists all registered users.
+    Displays all users in the database.
     """
     print("\n=== USER LIST ===")
     try:
@@ -206,20 +209,21 @@ def show_users():
         if not users:
             print("No users registered.")
             return
-        for idx, user in enumerate(users, 1):
-            print(f"\nUser #{idx}:")
-            print(f"ID: {user[1]}")
-            print(f"Name: {user[2]} {user[3]}")
-            print(f"Email: {user[4]}")
-            print(f"Phone: {user[5] if user[5] else 'Not specified'}")
-            print(f"Registration date: {user[7]}")
+        for inx, user in enumerate(users, 1):
+            print(f"\nUser #{inx}:")
+            print(f"ID: {user[0]}")
+            print(f"Name: {user[1]} {user[2]}")
+            print(f"Email: {user[3]}")
+            print(f"Phone: {user[4] if user[4] else 'Not specified'}")
+            print(f"Registration date: {user[6]}")
         print(f"\nTotal registered users: {len(users)}")
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Error displaying users: {e}")
 
+# 5. Show invoices for a user
 def show_user_invoices():
     """
-    Displays all invoices for a given user by email.
+    Displays all invoices associated with a user identified by email.
     """
     print("\n=== USER INVOICES ===")
     email = input("Enter user's email: ").strip()
@@ -229,7 +233,7 @@ def show_user_invoices():
         if not user:
             print("User not found.")
             return
-        print(f"\n--- INVOICES FOR {user[2]} {user[3]} ---")
+        print(f"\n--- INVOICES FOR {user[1]} {user[2]} ---")
         cursor.execute("SELECT * FROM invoices WHERE user_id=?", (user[0],))
         invoices = cursor.fetchall()
         if not invoices:
@@ -237,25 +241,26 @@ def show_user_invoices():
             return
         total_amount = 0
         pending_amount = 0
-        for idx, invoice in enumerate(invoices, 1):
-            print(f"\nInvoice #{idx}:")
-            print(f"Number: {invoice[1]}")
-            print(f"Issue date: {invoice[3]}")
-            print(f"Description: {invoice[4]}")
-            print(f"Amount: ${invoice[5]:.2f}")
-            print(f"Status: {invoice[6]}")
-            total_amount += invoice[5]
-            if invoice[6] == "Pending":
-                pending_amount += invoice[5]
+        for inx, invoice in enumerate(invoices, 1):
+            print(f"\nInvoice #{inx}:")
+            print(f"ID: {invoice[0]}")
+            print(f"Issue date: {invoice[2]}")
+            print(f"Description: {invoice[3]}")
+            print(f"Amount: ${invoice[4]:.2f}")
+            print(f"Status: {invoice[5]}")
+            total_amount += invoice[4]
+            if invoice[5] == "Pending":
+                pending_amount += invoice[4]
         print(f"\nTotal invoices: {len(invoices)}")
         print(f"Total invoiced amount: ${total_amount:.2f}")
         print(f"Pending amount: ${pending_amount:.2f}")
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Error displaying user invoices: {e}")
 
+#6. Financial summary per user
 def financial_summary():
     """
-    Shows a financial summary per user and overall.
+    Prints a financial summary for all users in the database.
     """
     print("\n=== FINANCIAL SUMMARY ===")
     try:
@@ -272,7 +277,7 @@ def financial_summary():
             total = sum(i[0] for i in invoices)
             paid = sum(i[0] for i in invoices if i[1] == "Paid")
             pending = sum(i[0] for i in invoices if i[1] == "Pending")
-            print(f"\nUser: {user[2]} {user[3]} ({user[4]})")
+            print(f"\nUser: {user[1]} {user[2]} ({user[3]})")
             print(f"- Total invoices: {n_invoices}")
             print(f"- Total amount: ${total:.2f}")
             print(f"- Paid invoices: ${paid:.2f}")
@@ -288,10 +293,9 @@ def financial_summary():
         print(f"Received income: ${received_income:.2f}")
         print(f"Pending income: ${pending_income:.2f}")
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Error generating financial summary: {e}")
 
-# Entry point
+#Main execution
 if __name__ == "__main__":
     menu()
-    # Close the database connection when done
     conn.close()
