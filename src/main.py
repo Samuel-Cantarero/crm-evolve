@@ -66,51 +66,74 @@ def register_user():
     """
     print("\n=== REGISTER NEW USER ===")
     first_name = input("Enter first name: ").strip()
-    last_name = input("Enter last name: ").strip()
-    email = input("Enter email: ").strip()
-    #Data validation
+    last_name  = input("Enter last name:  ").strip()
+    email      = input("Enter email: ").strip()
+
+    # Data validation
     if not first_name or not last_name or not email:
         print("First name, last name, and email are required.")
         return
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         print("Invalid email.")
         return
+
     try:
-        cursor.execute("SELECT * FROM users WHERE email=?", (email,))
+        cursor.execute("SELECT 1 FROM users WHERE email = ?", (email,))
         if cursor.fetchone():
             print("Email is already registered.")
             return
-        phone = input("Enter phone (optional): ").strip()
-        address = input("Enter address (optional): ").strip()
+
+        # Phone: optional, digits only
+        phone_str = input("Enter phone (digits only, optional): ").strip()
+        try:
+            phone = int(phone_str) if phone_str else None
+        except ValueError:
+            print("Invalid phone number: digits only.")
+            return
+
+        # Address: optional
+        address = input("Enter address (optional): ").strip() or None
+
         registration_date = datetime.now().strftime("%Y-%m-%d")
+
         # Insert the new user into the users table
         cursor.execute(
-            '''INSERT INTO users (first_name, last_name, email, phone, address, registration_date)
-               VALUES (?, ?, ?, ?, ?, ?)''',
-            (first_name, last_name, email, phone if phone else None, address if address else None, registration_date)
+            """
+            INSERT INTO users 
+                (first_name, last_name, email, phone, address, registration_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (first_name,
+             last_name,
+             email,
+             phone,
+             address,
+             registration_date)
         )
         conn.commit()
+
         print("\nUser registered successfully!")
-        # Show the user's database-assigned ID
         user_id = cursor.lastrowid
         print(f"Assigned ID: {user_id}")
         print(f"Registration date: {registration_date}")
+
     except sqlite3.Error as e:
         print(f"Error registering user: {e}")
 
 #2. Search user
 def search_user():
     """
-    Searches for a user by email or first name and displays their information.
+    Searches for a user by email or by full name (first and last) and displays their information.
     """
     print("\n=== SEARCH USER ===")
     print("1. Search by email")
-    print("2. Search by first name")
-    option = input("Choose search method: ")
+    print("2. Search by full name")
+    option = input("Choose search method: ").strip()
+
     if option == "1":
         email = input("Enter email: ").strip()
         try:
-            cursor.execute("SELECT * FROM users WHERE email=?", (email,))
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
             user = cursor.fetchone()
             if user:
                 show_user_info(user)
@@ -118,10 +141,21 @@ def search_user():
                 print("User not found.")
         except sqlite3.Error as e:
             print(f"Database error: {e}")
+
     elif option == "2":
-        first_name = input("Enter first name: ").strip()
+        full_name = input("Enter full name (first and last): ").strip()
+        parts = full_name.split(None, 1)
+        if len(parts) < 2:
+            print("Please enter both first and last name.")
+            return
+        first_input, last_input = parts
+        pattern_fn = f"%{first_input}%"
+        pattern_ln = f"%{last_input}%"
         try:
-            cursor.execute("SELECT * FROM users WHERE first_name LIKE ?", (f"%{first_name}%",))
+            cursor.execute(
+                "SELECT * FROM users WHERE first_name LIKE ? AND last_name LIKE ?", 
+                (pattern_fn, pattern_ln)
+            )
             users = cursor.fetchall()
             if users:
                 for user in users:

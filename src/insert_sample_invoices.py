@@ -22,7 +22,6 @@ emails = [
     "paula.ruiz@email.com",
     "javier.hernandez@email.com"
 ]
-
 #Invoice details
 description = "Servicio mensual de mantenimiento web"
 amount = 300.00
@@ -31,7 +30,7 @@ status = "Paid"
 # Insert one invoice per user
 inserted = 0
 for email in emails:
-    cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+    cursor.execute("SELECT user_id FROM users WHERE email = ?", (email,))
     result = cursor.fetchone()
     if result:
         user_id = result[0]

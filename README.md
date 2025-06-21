@@ -10,6 +10,7 @@ A Python-based CRM (Customer Relationship Management) system that manages user r
 - **Financial Summary**: Get total invoiced, paid, and pending amounts per user.
 - **Sample Data Scripts**: Easily populate the database with sample users and invoices.
 - **Test Suite**: Basic tests using `pytest` to verify user and invoice functionality.
+- **Design Documentation: Architecture docs and flowcharts in docs/.
 
 ## Installation
 
@@ -38,14 +39,20 @@ pip install -r requirements.txt
 ```
 crm-evolve/
 ├── src/
-│   └── main.py                  # Main menu-based CRM interface
-│   └── insert_sample_data.py    # Script to insert sample users
-│   └── insert_sample_invoices.py# Script to insert sample invoices
+│   ├── main.py                   # Main menu-based CRM interface
+│   ├── insert_sample_data.py     # Script to insert sample users
+│   └── insert_sample_invoices.py # Script to insert sample invoices
 ├── database/
-│   └── crm_schema.sql           # Database schema
-│   └── database_crm.db          # SQLite database
+│   ├── crm_schema.sql            # Database schema
+│   └── database_crm.db           # SQLite database
+├── docs/
+│   ├── CRM-Evolve_Design.docx    # System design document
+│   └── diagrams/
+│       ├── crm_flowchart.md      # Flowchart in Markdown
+│       ├── crm_flowchart.jpeg    # Flowchart image
+│       └── Databasebuild_diagram.jpg  # Database build diagram
 ├── test/
-│   └── test_crm.py              # Unit tests for users and invoices
+│   └── test_crm.py               # Unit tests for users and invoices
 ├── requirements.txt
 └── README.md
 ```

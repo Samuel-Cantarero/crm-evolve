@@ -20,7 +20,7 @@ def db_connection():
     # Create required tables
     cursor.executescript("""
     CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
@@ -29,13 +29,13 @@ def db_connection():
         registration_date TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE invoices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         issue_date TEXT NOT NULL DEFAULT (datetime('now')),
         description TEXT NOT NULL,
         amount REAL NOT NULL,
         status TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
     );
     """)
     conn.commit()
