@@ -56,6 +56,9 @@ crm-evolve/
 ├── requirements.txt
 └── README.md
 ```
+## Development tools
+
+To properly render Mermaid diagrams in VSCode, it is recommended to install the Markdown Preview Mermaid Support extension.
 
 ## Running Tests
 
